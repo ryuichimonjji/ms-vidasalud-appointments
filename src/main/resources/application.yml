@@ -16,3 +16,16 @@ spring:
   h2:
     console:
       enabled: true
+rabbitmq:
+  exchange: vidasalud.appointments.exchange
+  queue:
+    notify: vidasalud.notify.queue
+  routing-key:
+    created: appointment.created
+    status-changed: appointment.status.changed
+  dlx: vidasalud.appointments.dlx
+  dlq: vidasalud.notify.dlq
+  host: localhost
+  port: 5672
+  username: guest
+  password: guest

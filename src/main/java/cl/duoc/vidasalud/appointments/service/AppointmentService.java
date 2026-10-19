@@ -1,6 +1,7 @@
 package cl.duoc.vidasalud.appointments.service;
 
 import cl.duoc.vidasalud.appointments.dto.AppointmentRequest;
+import cl.duoc.vidasalud.appointments.event.AppointmentEventPublisher;
 import cl.duoc.vidasalud.appointments.model.Appointment;
 import cl.duoc.vidasalud.appointments.model.AppointmentStatus;
 import cl.duoc.vidasalud.appointments.repository.AppointmentRepository;
@@ -13,6 +14,7 @@ import java.util.Map;
 public class AppointmentService {
 
     private final AppointmentRepository repository;
+    private final AppointmentEventPublisher eventPublisher;
 
     private static final Map<AppointmentStatus, List<AppointmentStatus>> VALID_TRANSITIONS = Map.of(
         AppointmentStatus.SOLICITADA, List.of(AppointmentStatus.CONFIRMADA, AppointmentStatus.CANCELADA),
@@ -21,8 +23,9 @@ public class AppointmentService {
         AppointmentStatus.EN_ATENCION, List.of(AppointmentStatus.CERRADA)
     );
 
-    public AppointmentService(AppointmentRepository repository) {
+    public AppointmentService(AppointmentRepository repository, AppointmentEventPublisher eventPublisher) {
         this.repository = repository;
+        this.eventPublisher = eventPublisher;
     }
 
     public Appointment create(AppointmentRequest request) {
@@ -30,7 +33,9 @@ public class AppointmentService {
         appointment.setPatientId(request.getPatientId());
         appointment.setServiceId(request.getServiceId());
         appointment.setStatus(AppointmentStatus.SOLICITADA);
-        return repository.save(appointment);
+        Appointment saved = repository.save(appointment);
+        eventPublisher.publishCreated(saved);
+        return saved;
     }
 
     public Appointment getById(Long id) {
@@ -52,6 +57,8 @@ public class AppointmentService {
                 ". La atencion debe estar CONFIRMADA antes de EN_ATENCION.");
         }
         appointment.setStatus(newStatus);
-        return repository.save(appointment);
+        Appointment saved = repository.save(appointment);
+        eventPublisher.publishStatusChanged(saved);
+        return saved;
     }
 }
